@@ -50,6 +50,7 @@ import {
   applyColorTheme,
   readPersistedColorTheme,
 } from "#/themes/color-themes";
+import { useVisualViewportHeight } from "#/hooks/use-visual-viewport-height";
 
 /** Applies the persisted color-theme palette to document.body on mount. */
 function ColorThemeApplier() {
@@ -93,12 +94,15 @@ export function Layout({ children }: { children: React.ReactNode }) {
     <html lang="en">
       <head>
         <meta charSet="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta
+          name="viewport"
+          content="width=device-width, initial-scale=1, interactive-widget=resizes-content"
+        />
         <Meta />
         <Links />
       </head>
       <body data-agent-server-ui="" className="m-0">
-        <AgentServerUIRoot contentClassName="min-h-screen">
+        <AgentServerUIRoot contentClassName="min-h-[var(--viewport-height)]">
           <ColorThemeApplier />
           {children}
           <Toaster toastOptions={TOAST_OPTIONS} />
@@ -113,8 +117,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
 function AgentServerBootstrapLoading() {
   return (
-    <main className="min-h-screen bg-base px-6 py-10 text-white">
-      <div className="mx-auto flex min-h-screen max-w-6xl items-center justify-center">
+    <main className="min-h-[var(--viewport-height)] bg-base px-6 py-10 text-white">
+      <div className="mx-auto flex min-h-[var(--viewport-height)] max-w-6xl items-center justify-center">
         <div className="rounded-3xl border border-white/10 bg-base/80 px-8 py-10 shadow-2xl">
           <LoadingSpinner size="large" />
         </div>
@@ -148,7 +152,7 @@ function MissingAgentServerScreen() {
   return (
     <main
       data-testid="agent-server-onboarding-screen"
-      className="min-h-screen bg-base"
+      className="min-h-[var(--viewport-height)] bg-base"
     >
       <React.Suspense fallback={null}>
         <ManageBackendsModal onClose={handleClose} recoveryMode />
@@ -184,7 +188,7 @@ function FirstRunOnboardingScreen({ onClose }: { onClose: () => void }) {
     return (
       <main
         data-testid="first-run-onboarding-screen"
-        className="min-h-screen bg-base"
+        className="min-h-[var(--viewport-height)] bg-base"
       >
         <React.Suspense fallback={<AgentServerBootstrapLoading />}>
           <BackendFormModal
@@ -201,7 +205,7 @@ function FirstRunOnboardingScreen({ onClose }: { onClose: () => void }) {
   return (
     <main
       data-testid="first-run-onboarding-screen"
-      className="min-h-screen bg-base"
+      className="min-h-[var(--viewport-height)] bg-base"
     >
       <NavigationProvider value={navigationValue}>
         <React.Suspense fallback={<AgentServerBootstrapLoading />}>
@@ -218,14 +222,39 @@ export const links: LinksFunction = () => [
     type: "image/svg+xml",
     href: buildAgentCanvasPath("/favicon.svg"),
   },
+  {
+    rel: "manifest",
+    href: buildAgentCanvasPath("/site.webmanifest"),
+  },
+  {
+    rel: "apple-touch-icon",
+    sizes: "180x180",
+    href: buildAgentCanvasPath("/apple-touch-icon.png"),
+  },
+  {
+    rel: "mask-icon",
+    href: buildAgentCanvasPath("/safari-pinned-tab.svg"),
+    color: "#0B0E14",
+  },
 ];
 
 export const meta: MetaFunction = () => [
   { title: "OpenHands" },
   { name: "description", content: "Let's Start Building!" },
+  { name: "theme-color", content: "#0B0E14" },
+  { name: "apple-mobile-web-app-capable", content: "yes" },
+  {
+    name: "apple-mobile-web-app-status-bar-style",
+    content: "black-translucent",
+  },
+  { name: "apple-mobile-web-app-title", content: "Agent Canvas" },
 ];
 
 export default function App() {
+  // Keep the app container sized to the visible viewport so the mobile
+  // virtual keyboard does not obscure inputs.
+  useVisualViewportHeight();
+
   // Flag-based gate: in public mode (VITE_AUTH_REQUIRED=true) with no
   // session key yet, show the auth screen immediately — no network
   // round-trip needed.

@@ -13,6 +13,31 @@ import {
 } from "./components/providers";
 import { waitForI18n } from "./i18n";
 import { shouldStartMockWorker } from "./mocks/should-start-mock-worker";
+import { buildAgentCanvasPath } from "#/utils/base-path";
+
+function registerServiceWorker() {
+  if (
+    typeof navigator === "undefined" ||
+    !("serviceWorker" in navigator) ||
+    !import.meta.env.PROD
+  ) {
+    return;
+  }
+
+  const doRegister = () => {
+    navigator.serviceWorker
+      .register(buildAgentCanvasPath("/sw.js"))
+      .catch((error) => {
+        console.error("Service worker registration failed:", error);
+      });
+  };
+
+  if (document.readyState === "complete") {
+    doRegister();
+  } else {
+    window.addEventListener("load", doRegister, { once: true });
+  }
+}
 
 async function prepareApp() {
   await waitForI18n();
@@ -30,6 +55,8 @@ async function prepareApp() {
       await import("./dev/seed-pending-chat-preview");
     installPendingChatPreview();
   }
+
+  registerServiceWorker();
 }
 
 prepareApp().then(() =>

@@ -6,6 +6,7 @@ import { ConversationTabs } from "../conversation-tabs/conversation-tabs";
 import { ResizeHandle } from "../../../ui/resize-handle";
 import { useResizablePanels } from "#/hooks/use-resizable-panels";
 import { useConversationStore } from "#/stores/conversation-store";
+import { useChatInputFocusStore } from "#/stores/chat-input-focus-store";
 import {
   useBreakpoint,
   SIDEBAR_RAIL_COLLAPSE_MAX_WIDTH,
@@ -21,7 +22,9 @@ function getDesktopTabPanelClass(isRightPanelShown: boolean) {
 export function ConversationMain() {
   const isMobile = useBreakpoint();
   const isSidebarRailHidden = useBreakpoint(SIDEBAR_RAIL_COLLAPSE_MAX_WIDTH);
+  const isInputFocused = useChatInputFocusStore((state) => state.isFocused);
   const { isRightPanelShown } = useConversationStore();
+  const hideChatHeader = isSidebarRailHidden && isInputFocused;
 
   const { leftWidth, rightWidth, isDragging, containerRef, handleMouseDown } =
     useResizablePanels({
@@ -70,18 +73,20 @@ export function ConversationMain() {
               : undefined
           }
         >
-          <div
-            data-testid="chat-pane-header"
-            className={cn(
-              "flex h-10 min-h-10 shrink-0 items-center",
-              isSidebarRailHidden && "gap-2 pl-2.5",
-            )}
-          >
-            {isSidebarRailHidden ? <SidebarMobileMenuToggle /> : null}
-            <div className="min-w-0 flex-1">
-              <ConversationNameWithStatus />
+          {!hideChatHeader && (
+            <div
+              data-testid="chat-pane-header"
+              className={cn(
+                "flex h-10 min-h-10 shrink-0 items-center",
+                isSidebarRailHidden && "gap-2 pl-2.5",
+              )}
+            >
+              {isSidebarRailHidden ? <SidebarMobileMenuToggle /> : null}
+              <div className="min-w-0 flex-1">
+                <ConversationNameWithStatus />
+              </div>
             </div>
-          </div>
+          )}
           <div className="flex-1 min-h-0 flex flex-col">
             <ChatInterfaceWrapper
               isRightPanelShown={!isMobile && isRightPanelShown}
