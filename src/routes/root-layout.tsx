@@ -18,7 +18,6 @@ import { useSyncTelemetryConsent } from "#/hooks/use-sync-telemetry-consent";
 import { useSyncAutomationTelemetryConsent } from "#/hooks/use-sync-automation-telemetry-consent";
 
 import { useTelemetryIdentity } from "#/hooks/use-telemetry-identity";
-import { useChatInputFocusStore } from "#/stores/chat-input-focus-store";
 import { LoadingSpinner } from "#/components/shared/loading-spinner";
 import { useAppTitle } from "#/hooks/use-app-title";
 import { ReactRouterNavigationProvider } from "./react-router-navigation-provider";
@@ -91,8 +90,6 @@ export default function MainApp() {
     }
   }, [settings?.language]);
 
-  const isInputFocused = useChatInputFocusStore((state) => state.isFocused);
-
   if (config.isLoading) {
     return (
       <div className="min-h-[var(--viewport-height)] flex items-center justify-center bg-base">
@@ -119,9 +116,7 @@ export default function MainApp() {
           <Sidebar />
 
           <div className="flex min-h-0 flex-col w-full min-w-0 h-full gap-3">
-            {!hideMobileSidebarMenuBar && !isInputFocused ? (
-              <SidebarMobileMenuBar />
-            ) : null}
+            {!hideMobileSidebarMenuBar ? <SidebarMobileMenuBar /> : null}
             {config.data &&
               (config.data.maintenance_start_time ||
                 (config.data.faulty_models &&

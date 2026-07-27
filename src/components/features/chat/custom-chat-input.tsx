@@ -9,7 +9,6 @@ import { ChatInputGrip } from "./components/chat-input-grip";
 import { ChatInputContainer } from "./components/chat-input-container";
 import { HiddenFileInput } from "./components/hidden-file-input";
 import { useConversationStore } from "#/stores/conversation-store";
-import { useChatInputFocusStore } from "#/stores/chat-input-focus-store";
 import { cn } from "#/utils/utils";
 
 export interface CustomChatInputProps {
@@ -68,25 +67,6 @@ export function CustomChatInput({
   useEffect(() => {
     onSubmitRef.current = onSubmit;
   }, [onSubmit]);
-
-  const onFocusRef = useRef(onFocus);
-  const onBlurRef = useRef(onBlur);
-  useEffect(() => {
-    onFocusRef.current = onFocus;
-    onBlurRef.current = onBlur;
-  }, [onFocus, onBlur]);
-
-  const { setFocused: setChatInputFocused } = useChatInputFocusStore();
-
-  const handleInputFocus = React.useCallback(() => {
-    setChatInputFocused(true);
-    onFocusRef.current?.();
-  }, [setChatInputFocused]);
-
-  const handleInputBlur = React.useCallback(() => {
-    setChatInputFocused(false);
-    onBlurRef.current?.();
-  }, [setChatInputFocused]);
 
   // Listen to submittedMessage state changes
   useEffect(() => {
@@ -157,8 +137,8 @@ export function CustomChatInput({
       increaseHeightForEmptyContent,
       checkIsContentEmpty,
       clearEmptyContentHandler,
-      handleInputFocus,
-      handleInputBlur,
+      onFocus,
+      onBlur,
     );
 
   const {
