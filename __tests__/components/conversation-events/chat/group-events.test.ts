@@ -5,6 +5,7 @@ import {
   EVENT_GROUP_MIN_SIZE,
 } from "#/components/conversation-events/chat/group-events";
 import {
+  ACPToolCallEvent,
   ActionEvent,
   AgentErrorEvent,
   HookExecutionEvent,
@@ -151,6 +152,24 @@ const makeHookExecutionEvent = (id: string): HookExecutionEvent => ({
   hook_input: null,
 });
 
+const makeACPToolCall = (
+  id: string,
+  status: ACPToolCallEvent["status"] = "completed",
+): ACPToolCallEvent => ({
+  id,
+  timestamp: new Date().toISOString(),
+  kind: "ACPToolCallEvent",
+  source: "agent",
+  tool_call_id: `acp_${id}`,
+  title: `Read /workspace/${id}.py`,
+  tool_kind: "read",
+  status,
+  raw_input: { path: `/workspace/${id}.py` },
+  raw_output: "ok",
+  content: null,
+  is_error: false,
+});
+
 describe("isGroupableEvent", () => {
   it("groups regular action events", () => {
     expect(isGroupableEvent(makeBashAction("a1"))).toBe(true);
@@ -186,6 +205,10 @@ describe("isGroupableEvent", () => {
 
   it("does not group HookExecutionEvent", () => {
     expect(isGroupableEvent(makeHookExecutionEvent("h1"))).toBe(false);
+  });
+
+  it("groups ACP tool call events", () => {
+    expect(isGroupableEvent(makeACPToolCall("acp1"))).toBe(true);
   });
 });
 
@@ -228,6 +251,26 @@ describe("groupEvents", () => {
       expect(result[1].events).toHaveLength(2);
     }
     expect(result[2]).toMatchObject({ kind: "single", index: 3 });
+  });
+
+  it("groups consecutive ACP tool calls", () => {
+    const events = [
+      makeUserMessage("m1"),
+      makeACPToolCall("acp1"),
+      makeACPToolCall("acp2"),
+      makeACPToolCall("acp3"),
+      makeACPToolCall("acp4"),
+      makeUserMessage("m2"),
+    ];
+
+    const result = groupEvents(events);
+    expect(result).toHaveLength(3);
+    expect(result[0]).toMatchObject({ kind: "single", index: 0 });
+    expect(result[1]).toMatchObject({ kind: "group", startIndex: 1 });
+    if (result[1].kind === "group") {
+      expect(result[1].events).toHaveLength(4);
+    }
+    expect(result[2]).toMatchObject({ kind: "single", index: 5 });
   });
 
   it("groups runs of >= EVENT_GROUP_MIN_SIZE events", () => {

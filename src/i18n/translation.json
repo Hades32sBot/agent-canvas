@@ -30004,6 +30004,23 @@
     "uk": "Згорнути дії",
     "ca": "Replega les accions"
   },
+  "EVENT_GROUP$WORKING": {
+    "en": "Working...",
+    "ja": "作業中...",
+    "zh-CN": "工作中...",
+    "zh-TW": "工作中...",
+    "ko-KR": "작업 중...",
+    "no": "Arbeider...",
+    "ar": "يعمل...",
+    "de": "Arbeitet...",
+    "fr": "En cours...",
+    "it": "In elaborazione...",
+    "pt": "A trabalhar...",
+    "es": "Trabajando...",
+    "tr": "Çalışıyor...",
+    "uk": "Працює...",
+    "ca": "Treballant..."
+  },
   "ONBOARDING$TITLE": {
     "en": "Welcome to OpenHands",
     "ja": "OpenHands へようこそ",

@@ -223,6 +223,7 @@ export function ConversationCard({
               ? "min-w-[3.75rem]"
               : hasHoverActions &&
                   "group-hover:min-w-[3.75rem] group-focus-within:min-w-[3.75rem]",
+            hasHoverActions && "max-md:min-w-[3.75rem]",
             contextMenuOpen && "min-w-[3.75rem]",
           )}
         >
@@ -231,7 +232,7 @@ export function ConversationCard({
               className={cn(
                 "text-xs text-[var(--oh-muted)] text-right whitespace-nowrap transition-opacity -translate-x-1.5",
                 hasHoverActions &&
-                  "group-hover:opacity-0 group-focus-within:opacity-0",
+                  "group-hover:opacity-0 group-focus-within:opacity-0 max-md:opacity-0",
                 contextMenuOpen && "opacity-0",
               )}
             >
@@ -249,6 +250,7 @@ export function ConversationCard({
                       "pointer-events-none opacity-0 invisible",
                       "group-hover:pointer-events-auto group-hover:opacity-100 group-hover:visible",
                       "group-focus-within:pointer-events-auto group-focus-within:opacity-100 group-focus-within:visible",
+                      "max-md:pointer-events-auto max-md:opacity-100 max-md:visible",
                     ),
                 contextMenuOpen && "pointer-events-auto visible opacity-100",
               )}
@@ -261,7 +263,7 @@ export function ConversationCard({
                   <div
                     className={cn(
                       !contextMenuOpen &&
-                        "invisible pointer-events-none group-hover:visible group-hover:pointer-events-auto group-focus-within:visible group-focus-within:pointer-events-auto",
+                        "invisible pointer-events-none group-hover:visible group-hover:pointer-events-auto group-focus-within:visible group-focus-within:pointer-events-auto max-md:visible max-md:pointer-events-auto",
                     )}
                   >
                     <ConversationCardActions
@@ -281,7 +283,7 @@ export function ConversationCard({
                     className={cn(
                       "pointer-events-none absolute inset-0 flex items-center justify-end",
                       "text-xs text-[var(--oh-muted)] whitespace-nowrap -translate-x-1.5",
-                      "group-hover:hidden group-focus-within:hidden",
+                      "group-hover:hidden group-focus-within:hidden max-md:hidden",
                       contextMenuOpen && "hidden",
                     )}
                   >

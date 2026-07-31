@@ -64,6 +64,7 @@
 
 :root {
   color-scheme: dark;
+  --viewport-height: 100dvh;
   --oh-color-primary: #c9b974;
   --oh-color-logo: #cfb755;
   --oh-color-base: var(--cool-grey-950);
