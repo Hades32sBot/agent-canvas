@@ -24,7 +24,7 @@ import { getActionContent } from "#/components/conversation-events/chat/event-co
 import { getObservationContent } from "#/components/conversation-events/chat/event-content-helpers/get-observation-content";
 import {
   getACPToolCallContent,
-  stripRedundantTitlePrefix,
+  getACPToolCallDisplayTitle,
 } from "#/components/conversation-events/chat/event-content-helpers/get-acp-tool-call-content";
 import { groupEvents } from "#/components/conversation-events/chat/group-events";
 import {
@@ -444,9 +444,7 @@ const buildTranscriptEntries = (
       if (isACPToolCallEvent(event)) {
         entries.push({
           kind: "tool",
-          summary:
-            stripRedundantTitlePrefix(event) ||
-            i18n.t(I18nKey.ACTION_MESSAGE$ACP_TOOL),
+          summary: getACPToolCallDisplayTitle(event),
           details: includeToolDetails ? getACPToolCallContent(event) : "",
           timestamp: event.timestamp,
         });

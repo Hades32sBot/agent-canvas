@@ -5,11 +5,13 @@ import ArrowDown from "#/icons/angle-down-solid.svg?react";
 import ArrowUp from "#/icons/angle-up-solid.svg?react";
 import { OpenHandsEvent, ActionEvent } from "#/types/agent-server/core";
 import {
+  isACPToolCallEvent,
   isActionEvent,
   isObservationEvent,
 } from "#/types/agent-server/type-guards";
 import { I18nKey } from "#/i18n/declaration";
 import { getEventContent } from "../event-content-helpers/get-event-content";
+import { getACPToolCallResult } from "../event-content-helpers/get-observation-result";
 import { IsInEventGroupContext } from "../../../features/chat/is-in-event-group-context";
 
 interface EventGroupProps {
@@ -70,18 +72,26 @@ export function EventGroup({
     return null;
   }
 
-  // Each ObservationEvent in the group is a completed action. An ActionEvent
-  // that's still here (i.e. not yet replaced by its observation in the UI
-  // events array) is an action currently in flight.
-  const pendingAction = events.find((e): e is ActionEvent => isActionEvent(e));
-  const completedCount = events.filter(isObservationEvent).length;
+  // Count completed events and detect whether the group is still in flight.
+  // Native OpenHands pairs: an ActionEvent is the pending action and its
+  // ObservationEvent is the completed result. ACP tool calls condense both
+  // sides into a single ACPToolCallEvent whose status tells us the same.
+  const isACPRunning = (e: OpenHandsEvent): boolean =>
+    isACPToolCallEvent(e) && getACPToolCallResult(e) === undefined;
+
+  const completedCount = events.filter(
+    (e) =>
+      isObservationEvent(e) ||
+      (isACPToolCallEvent(e) && getACPToolCallResult(e) !== undefined),
+  ).length;
   const totalCount = events.length;
-  const isRunning = !!pendingAction;
+  const isRunning = events.some((e) => isActionEvent(e) || isACPRunning(e));
 
   // Title of the most recent groupable event. While running this is the
   // pending action; otherwise it's the latest observation, with its
   // originating action looked up so the title can be the action-style summary
-  // ("Editing path/to/file") instead of the observation default.
+  // ("Editing path/to/file") instead of the observation default. ACP events
+  // are self-contained, so we just render their own title.
   const latestEvent = events[events.length - 1];
   let latestTitle: React.ReactNode = null;
   if (latestEvent) {
@@ -94,6 +104,8 @@ export function EventGroup({
           isActionEvent(e) && e.id === latestEvent.action_id,
       );
       latestTitle = getEventContent(latestEvent, correspondingAction).title;
+    } else if (isACPToolCallEvent(latestEvent)) {
+      latestTitle = getEventContent(latestEvent).title;
     }
   }
 
@@ -103,6 +115,12 @@ export function EventGroup({
         total: totalCount,
       })
     : t(I18nKey.EVENT_GROUP$ACTIONS_COMPLETED, { count: totalCount });
+
+  // When a running group grows large, switch to a compact "Working..." label
+  // and use the latest active title as a hint instead of the full count text.
+  const WORKING_GROUP_THRESHOLD = 3;
+  const shouldSimplify =
+    !isFinalized && isRunning && totalCount > WORKING_GROUP_THRESHOLD;
 
   const Chevron = expanded ? ArrowUp : ArrowDown;
 
@@ -131,10 +149,16 @@ export function EventGroup({
           <>
             <span className="flex items-center gap-2 min-w-0 font-normal text-[var(--oh-muted)]">
               <Chevron className="h-4 w-4 fill-[var(--oh-muted)] flex-shrink-0" />
-              <span className="truncate">{latestTitle ?? countSummary}</span>
+              <span className="truncate">
+                {shouldSimplify
+                  ? t(I18nKey.EVENT_GROUP$WORKING)
+                  : (latestTitle ?? countSummary)}
+              </span>
             </span>
             <span className="flex items-center flex-shrink-0 font-normal text-[var(--oh-muted)]">
-              <span className="truncate">{countSummary}</span>
+              <span className="truncate" title={countSummary}>
+                {shouldSimplify ? (latestTitle ?? countSummary) : countSummary}
+              </span>
               {isRunning ? (
                 <LoaderCircle
                   data-testid="spinner-icon"

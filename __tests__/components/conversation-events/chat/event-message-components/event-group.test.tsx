@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { renderWithProviders } from "test-utils";
 import { EventGroup } from "#/components/conversation-events/chat/event-message-components/event-group";
 import {
+  ACPToolCallEvent,
   ActionEvent,
   ObservationEvent,
   SecurityRisk,
@@ -61,6 +62,24 @@ const makeBashObservation = (
     timeout: false,
     metadata: {} as never,
   },
+});
+
+const makeACPToolCall = (
+  id: string,
+  status: ACPToolCallEvent["status"] = "completed",
+): ACPToolCallEvent => ({
+  id,
+  timestamp: new Date().toISOString(),
+  kind: "ACPToolCallEvent",
+  source: "agent",
+  tool_call_id: `acp_${id}`,
+  title: `Read /workspace/${id}.py`,
+  tool_kind: "read",
+  status,
+  raw_input: { path: `/workspace/${id}.py` },
+  raw_output: "ok",
+  content: null,
+  is_error: false,
 });
 
 describe("EventGroup", () => {
@@ -227,5 +246,42 @@ describe("EventGroup", () => {
     expect(toggle).toHaveAttribute("aria-label", "EVENT_GROUP$EXPAND");
     expect(screen.queryByRole("region")).not.toBeInTheDocument();
     expect(screen.queryByTestId("child")).not.toBeInTheDocument();
+  });
+
+  it("renders the latest ACP tool call title in a running group", () => {
+    const events = [
+      makeACPToolCall("acp1", "completed"),
+      makeACPToolCall("acp2", "completed"),
+      // The last call is still in progress, so the group is "running".
+      makeACPToolCall("acp3", "in_progress"),
+    ];
+
+    renderWithProviders(
+      <EventGroup events={events}>
+        <div>child</div>
+      </EventGroup>,
+    );
+
+    expect(screen.getByTestId("spinner-icon")).toBeInTheDocument();
+    expect(screen.getByText(/ACTION_MESSAGE\$ACP_READ/)).toBeInTheDocument();
+  });
+
+  it("collapses a large running ACP group to 'Working...'", () => {
+    const events = [
+      makeACPToolCall("acp1", "completed"),
+      makeACPToolCall("acp2", "completed"),
+      makeACPToolCall("acp3", "completed"),
+      // A fourth in-progress call pushes the running group past the threshold.
+      makeACPToolCall("acp4", "in_progress"),
+    ];
+
+    renderWithProviders(
+      <EventGroup events={events}>
+        <div>child</div>
+      </EventGroup>,
+    );
+
+    expect(screen.getByText("EVENT_GROUP$WORKING")).toBeInTheDocument();
+    expect(screen.getByTestId("spinner-icon")).toBeInTheDocument();
   });
 });

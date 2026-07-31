@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   getACPToolCallContent,
+  getACPToolCallDisplayTitle,
   getACPToolCallTitleKey,
   stripRedundantTitlePrefix,
 } from "#/components/conversation-events/chat/event-content-helpers/get-acp-tool-call-content";
@@ -59,7 +60,7 @@ describe("getACPToolCallContent", () => {
     expect(content).toContain("diff --git a/foo b/foo");
   });
 
-  it("renders non-execute tool calls with an Input: JSON block", () => {
+  it("renders edit tool calls with Path: and Output: blocks", () => {
     const content = getACPToolCallContent(
       makeEvent({
         tool_kind: "edit",
@@ -68,10 +69,9 @@ describe("getACPToolCallContent", () => {
       }),
     );
 
-    expect(content).toContain("Input:");
-    expect(content).toContain("```json");
-    expect(content).toContain('"path": "/workspace/foo.py"');
+    expect(content).toContain("Path: `/workspace/foo.py`");
     expect(content).toContain("Output:");
+    expect(content).toContain("```");
     expect(content).toContain("ok");
   });
 
@@ -104,7 +104,7 @@ describe("getACPToolCallContent", () => {
     expect(content).not.toMatch(/x{1001}/);
   });
 
-  it("serialises structured raw_output as JSON", () => {
+  it("extracts readable text from structured raw_output", () => {
     const content = getACPToolCallContent(
       makeEvent({
         tool_kind: "fetch",
@@ -113,8 +113,63 @@ describe("getACPToolCallContent", () => {
       }),
     );
 
-    expect(content).toContain('"status": 200');
-    expect(content).toContain('"body": "ok"');
+    expect(content).toContain("URL: `https://example.com`");
+    expect(content).toContain("Output:");
+    expect(content).toContain("```");
+    expect(content).toContain("ok");
+  });
+
+  it("falls back to event.content when raw_output is empty", () => {
+    const content = getACPToolCallContent(
+      makeEvent({
+        tool_kind: "execute",
+        raw_input: { command: "echo hello" },
+        raw_output: null,
+        content: [{ type: "text", text: "hello" }],
+      }),
+    );
+
+    expect(content).toContain("Command: `echo hello`");
+    expect(content).toContain("Output:");
+    expect(content).toContain("hello");
+    expect(content).not.toContain("OBSERVATION$COMMAND_NO_OUTPUT");
+  });
+
+  it("renders output from structured content blocks in raw_output", () => {
+    const content = getACPToolCallContent(
+      makeEvent({
+        tool_kind: "execute",
+        raw_input: { command: "ls" },
+        raw_output: [{ type: "text", text: "foo.py\nbar.py" }],
+      }),
+    );
+
+    expect(content).toContain("foo.py");
+    expect(content).toContain("bar.py");
+  });
+
+  it("omits the no-output fallback for read and edit tools", () => {
+    const readContent = getACPToolCallContent(
+      makeEvent({
+        tool_kind: "read",
+        raw_input: { path: "/workspace/empty.txt" },
+        raw_output: null,
+      }),
+    );
+
+    expect(readContent).toContain("Path: `/workspace/empty.txt`");
+    expect(readContent).not.toContain("OBSERVATION$COMMAND_NO_OUTPUT");
+
+    const editContent = getACPToolCallContent(
+      makeEvent({
+        tool_kind: "edit",
+        raw_input: { path: "/workspace/foo.py" },
+        raw_output: null,
+      }),
+    );
+
+    expect(editContent).toContain("Path: `/workspace/foo.py`");
+    expect(editContent).not.toContain("OBSERVATION$COMMAND_NO_OUTPUT");
   });
 });
 
@@ -191,6 +246,60 @@ describe("stripRedundantTitlePrefix", () => {
     expect(
       stripRedundantTitlePrefix(makeEvent({ tool_kind: "read", title: "" })),
     ).toBe("");
+  });
+});
+
+describe("getACPToolCallDisplayTitle", () => {
+  it("uses event.title when present", () => {
+    expect(
+      getACPToolCallDisplayTitle(
+        makeEvent({ tool_kind: "read", title: "/workspace/foo.py" }),
+      ),
+    ).toBe("/workspace/foo.py");
+  });
+
+  it("strips redundant leading verbs from the title", () => {
+    expect(
+      getACPToolCallDisplayTitle(
+        makeEvent({ tool_kind: "read", title: "Read /workspace/foo.py" }),
+      ),
+    ).toBe("/workspace/foo.py");
+  });
+
+  it("falls back to raw_input.path for read/edit tools", () => {
+    expect(
+      getACPToolCallDisplayTitle(
+        makeEvent({
+          tool_kind: "read",
+          title: "",
+          raw_input: { path: "/workspace/bar.py" },
+        }),
+      ),
+    ).toBe("/workspace/bar.py");
+  });
+
+  it("falls back to raw_input.command for execute tools", () => {
+    expect(
+      getACPToolCallDisplayTitle(
+        makeEvent({
+          tool_kind: "execute",
+          title: "",
+          raw_input: { command: "ls -la" },
+        }),
+      ),
+    ).toBe("ls -la");
+  });
+
+  it("falls back to raw_input.url for fetch tools", () => {
+    expect(
+      getACPToolCallDisplayTitle(
+        makeEvent({
+          tool_kind: "fetch",
+          title: "",
+          raw_input: { url: "https://example.com" },
+        }),
+      ),
+    ).toBe("https://example.com");
   });
 });
 

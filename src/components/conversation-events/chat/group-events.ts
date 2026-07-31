@@ -1,5 +1,6 @@
 import { ActionEvent, OpenHandsEvent } from "#/types/agent-server/core";
 import {
+  isACPToolCallEvent,
   isActionEvent,
   isObservationEvent,
   isPlanningFileEditorObservationEvent,
@@ -35,6 +36,14 @@ export const isGroupableEvent = (event: OpenHandsEvent): boolean => {
     if (event.observation.kind === "TaskTrackerObservation") {
       return false;
     }
+    return true;
+  }
+
+  // ACP sub-agent tool calls are stand-in action/observation pairs.
+  // The UI replaces the started event with the terminal one, so a single
+  // ACPToolCallEvent represents one tool call and should fold into a group
+  // just like a native action/observation pair.
+  if (isACPToolCallEvent(event)) {
     return true;
   }
 

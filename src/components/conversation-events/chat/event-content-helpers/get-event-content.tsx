@@ -21,8 +21,8 @@ import { getActionContent } from "./get-action-content";
 import { getObservationContent } from "./get-observation-content";
 import {
   getACPToolCallContent,
+  getACPToolCallDisplayTitle,
   getACPToolCallTitleKey,
-  stripRedundantTitlePrefix,
 } from "./get-acp-tool-call-content";
 import { TaskTrackingObservationContent } from "../task-tracking/task-tracking-observation-content";
 import { TaskTrackerObservation } from "#/types/agent-server/core/base/observation";
@@ -448,13 +448,11 @@ export const getEventContent = (
     // title is "Running/Editing/Reading …" via a translation key that
     // mirrors ACTION_MESSAGE$RUN etc.; details are markdown built from
     // raw_input + raw_output the same way getTerminalObservationContent
-    // builds "Command: / Output:" blocks.
+    // builds "Command: / Output:" blocks. The display title falls back to
+    // the path / command / URL in raw_input when the ACP server does not
+    // provide a title.
     title = createTitleFromKey(getACPToolCallTitleKey(event), {
-      // Strip a redundant verb prefix the ACP server may have inlined
-      // (Claude Code emits ``"Read /path"`` for a read tool; combined
-      // with the ``"Reading <cmd>{{title}}</cmd>"`` template that lands
-      // as ``"Reading Read /path"``). See ``stripRedundantTitlePrefix``.
-      title: stripRedundantTitlePrefix(event),
+      title: getACPToolCallDisplayTitle(event),
     });
     details = getACPToolCallContent(event);
   } else if (
