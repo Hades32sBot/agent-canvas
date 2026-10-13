@@ -38,7 +38,6 @@ import { useLlmConfigured } from "#/hooks/use-llm-configured";
 import { Messages } from "#/components/conversation-events/chat/messages";
 import { PendingUserMessages } from "./pending-user-messages";
 import { useUnifiedUploadFiles } from "#/hooks/mutation/use-unified-upload-files";
-import { validateFiles } from "#/utils/file-validation";
 import { useConversationStore } from "#/stores/conversation-store";
 import ConfirmationModeEnabled from "./confirmation-mode-enabled";
 import { useTaskPolling } from "#/hooks/query/use-task-polling";
@@ -321,15 +320,6 @@ export function ChatInterface() {
         sessionMessageCount: totalEvents,
         currentMessageLength: content.length,
       });
-    }
-
-    // Validate file sizes before any processing
-    const allFiles = [...images, ...files];
-    const validation = validateFiles(allFiles);
-
-    if (!validation.isValid) {
-      displayErrorToast(`Error: ${validation.errorMessage}`);
-      return; // Stop processing if validation fails
     }
 
     const promises = images.map((image) => convertImageToBase64(image));

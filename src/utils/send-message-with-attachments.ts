@@ -8,7 +8,6 @@ import type { SendMessageRequest } from "#/api/conversation-service/agent-server
 import { convertImageToBase64 } from "#/utils/convert-image-to-base-64";
 import { displayErrorToast } from "#/utils/custom-toast-handlers";
 import { partitionImagesForUpload } from "#/components/features/chat/utils/chat-input.utils";
-import { validateFiles } from "#/utils/file-validation";
 import { I18nKey } from "#/i18n/declaration";
 
 export interface SendMessageWithAttachmentsResult {
@@ -41,11 +40,6 @@ export async function sendMessageWithAttachments(options: {
     imagesMarkedUploadAsFile,
   );
   const filesToUpload = [...files, ...imagesAsFiles];
-
-  const validation = validateFiles([...imagesToEmbed, ...filesToUpload]);
-  if (!validation.isValid) {
-    throw new Error(validation.errorMessage ?? "Invalid attachments");
-  }
 
   const imageUrls = await Promise.all(
     imagesToEmbed.map((image) => convertImageToBase64(image)),
